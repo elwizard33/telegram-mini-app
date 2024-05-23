@@ -72,19 +72,23 @@ function App() {
 
     const getAccountData = async () => {
         const providerId = window.localStorage.getItem('providerId');
-        await axios
-            .get(BRIDGE_URL + '/account/' + providerId, {
+        if (!providerId) {
+            console.error('Provider ID not found.');
+            return;
+        }
+        try {
+            const response = await axios.get(`${BRIDGE_URL}/account/${providerId}`, {
                 withCredentials: true,
                 headers: {
                     'Content-Type': 'application/json',
                     'ngrok-skip-browser-warning': 'true',
                 },
-            })
-
-            .then((response) => {
-                setAccount(response.data.account);
-                setBalance(response.data.balance);
             });
+            setAccount(response.data.account);
+            setBalance(response.data.balance);
+        } catch (error) {
+            console.error('Error fetching account data:', error);
+        }
     };
 
     const handleConnect = () => {
@@ -93,15 +97,8 @@ function App() {
 
     // Handle MainButton changes on view change
     useEffect(() => {
-        if (view === View.LANDING) {
-        }
-        // Change the Main Buttons color and textColor to match telegrams background color, to "hide" the button
-        if (view === View.CONNECT) {
-        }
         if (view === View.CONNECTED) {
             getAccountData();
-        }
-        if (view === View.WALLET) {
         }
     }, [view]);
 
@@ -136,7 +133,7 @@ function App() {
         }
 
         axios
-            .post(BRIDGE_URL + '/sign', {
+            .post(`${BRIDGE_URL}/sign`, {
                 message: 'This is a test message.',
                 account: account,
                 providerId: providerId,
@@ -187,9 +184,13 @@ function App() {
                 dispatch(setConnectionState('disconnected'));
                 setView(View.CONNECT);
 
-                await axios.post(BRIDGE_URL + '/disconnect', {
-                    providerId: window.localStorage.getItem('providerId'),
-                });
+                try {
+                    await axios.post(`${BRIDGE_URL}/disconnect`, {
+                        providerId: window.localStorage.getItem('providerId'),
+                    });
+                } catch (error) {
+                    console.error('Error during disconnect:', error);
+                }
             }
         );
     };
@@ -352,21 +353,14 @@ function App() {
                                 />
                             </div>
                             <div className="flex flex-col min-h-32 gap-2">
-                                <TransactionHistoryItem
-                                    currency="Ether"
-                                    symbol="ETH"
-                                    valueSpot={parseFloat(balance || '0.0')}
-                                />
-                                <TransactionHistoryItem
-                                    currency="Ether"
-                                    symbol="ETH"
-                                    valueSpot={parseFloat(balance || '0.0')}
-                                />
-                                <TransactionHistoryItem
-                                    currency="Ether"
-                                    symbol="ETH"
-                                    valueSpot={parseFloat(balance || '0.0')}
-                                />
+                                {[...Array(3)].map((_, index) => (
+                                    <TransactionHistoryItem
+                                        key={index}
+                                        currency="Ether"
+                                        symbol="ETH"
+                                        valueSpot={parseFloat(balance || '0.0')}
+                                    />
+                                ))}
                             </div>
                             {signedMessage && (
                                 <div
