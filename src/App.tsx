@@ -3,31 +3,6 @@ import WebApp from '@twa-dev/sdk';
 import axios from 'axios';
 import { AppDispatch, RootState } from './redux/store';
 
-import Avatar from './components/utils/Avatar';
-import BackButton from './components/buttons/BackButton';
-import SkipButton from './components/buttons/SkipButton';
-import PrimaryButton from './components/buttons/PrimaryButton';
-import Tooltip from './components/utils/Tooltip';
-import TransactionButton from './components/buttons/TransactionButton';
-import TransactionHistoryItem from './components/utils/TransactionHistoryItem';
-import ConnectOverlay from './components/connectOverlay/ConnectOverlay';
-
-import EVMConnectModal from './components/connectors/EVMConnectModal';
-import TonConnectModal from './components/connectors/TonConnectModal';
-
-import avatarPhone from './assets/avatar_phone.svg';
-import avatarScooter from './assets/avatar_scooter.svg';
-import avatarTable from './assets/avatar_table.svg';
-
-import evmConnectIcon from './assets/EVM_connect_logos.png';
-import tonConnectIcon from './assets/ton_connect.png';
-import walletConnectIcon from './assets/wallet_connect.png';
-import etherIcon from './assets/ether_icon.png';
-import sendIcon from './assets/send_icon.svg';
-import receiveIcon from './assets/receive_icon.svg';
-import sellIcon from './assets/sell_icon.svg';
-import { useTonWallet } from '@tonconnect/ui-react';
-import WalletConnectModal from './components/connectors/WalletConnectModal';
 import { useDispatch, useSelector } from 'react-redux';
 import { setConnectionState } from './redux/connectionSlice';
 
@@ -36,6 +11,7 @@ enum View {
     CONNECT = 1,
     CONNECTED = 2,
     WALLET = 3,
+    MAIN = 4,
 }
 
 WebApp.setHeaderColor('#1a1a1a');
@@ -62,8 +38,8 @@ function App() {
         setView(view - 1);
     };
 
-    const openWallet = () => {
-        setView(View.WALLET);
+    const openMain = () => {
+        setView(View.MAIN);
     };
 
     // Get Accounts
@@ -102,74 +78,6 @@ function App() {
         }
     }, [view]);
 
-    // TON Connect
-    const tonWallet = useTonWallet();
-    useEffect(() => {
-        if (!tonWallet) return;
-        // setAccount(tonWallet.account.address);
-        // setView(View.CONNECTED);
-    }, [tonWallet]);
-
-    // Test Functions
-    const [signedMessage, setSignedMessage] = useState<string | null>(null);
-    const triggerTestMessageSign = () => {
-        const providerId = window.localStorage.getItem('providerId');
-        if (!providerId) {
-            console.error('Provider ID not found.');
-            return;
-        }
-        const wallet = window.localStorage.getItem('walletProvider');
-        if (!wallet) {
-            console.error('Wallet not found.');
-            return;
-        }
-
-        const uri = window.localStorage.getItem('walletConnectURI');
-
-        if (wallet === 'metamask') {
-            WebApp.openLink(`https://metamask.app.link/wc?uri=${uri}`);
-        } else if (wallet === 'trust') {
-            WebApp.openLink(`https://link.trustwallet.com/wc?uri=${uri}`);
-        }
-
-        axios
-            .post(`${BRIDGE_URL}/sign`, {
-                message: 'This is a test message.',
-                account: account,
-                providerId: providerId,
-            })
-            .then((response) => {
-                console.log(response.data.signature);
-                setSignedMessage(response.data.signature);
-            });
-    };
-
-    // Transaction Functions
-    const sendFunds = () => {
-        // Send Funds
-    };
-
-    const receiveFunds = () => {
-        // Receive Funds
-    };
-
-    const sell = () => {
-        // Sell
-    };
-
-    // Connect Overlay
-    const [showConnectOverlay, setShowConnectOverlay] = useState(false);
-    const [slideAnimation, setSlideAnimation] = useState('in');
-
-    const openConnectOverlay = () => {
-        setSlideAnimation('in');
-        setTimeout(() => setShowConnectOverlay(true), 100);
-    };
-    const closeConnectOverlay = () => {
-        setSlideAnimation('out');
-        setTimeout(() => setShowConnectOverlay(false), 100);
-    };
-
     // Disconnect
     const handleDisconnect = async () => {
         WebApp.showConfirm(
@@ -200,8 +108,7 @@ function App() {
             {view === View.LANDING && (
                 <div className="flex flex-col flex-grow min-h-full justify-end">
                     <div className="components-container mb-2">
-                        <SkipButton skip={skip} />
-                        <Avatar src={avatarScooter} />
+                        <button onClick={skip}>Skip</button>
                         <div className="flex flex-col bg-white pt-4 pr-8 pb-8 pl-8 gap-4 rounded-t-3xl rounded-b-xl shadow-custom-white">
                             <div>
                                 <h2 className="headline">
@@ -223,164 +130,69 @@ function App() {
                         </div>
                     </div>
                     <div className="p-2 mb-4">
-                        <PrimaryButton
-                            title="Connect Your Wallet"
-                            callback={skip}
-                        />
+                        <button onClick={skip}>Connect Your Wallet</button>
                     </div>
                 </div>
             )}
             {view === View.CONNECT && (
                 <div className="components-container">
-                    <div
-                        className={`transition-opacity duration-1000 ease-in-out ${
-                            showConnectOverlay && 'blur-sm brightness-90'
-                        }`}
-                    >
-                        <div className="flex justify-between">
-                            <BackButton goBack={goBack} />
-                            {connectionState === 'connected' && (
-                                <SkipButton skip={skip} />
-                            )}
-                        </div>
-                        <Avatar src={avatarPhone} />
-                        <div className="flex flex-col absolute w-full bottom-0 bg-white pt-4 px-8 pb-14 gap-4 rounded-t-3xl rounded-b-xl shadow-custom-white">
-                            <h2 className="headline">CONNECT</h2>
-                            <EVMConnectModal
-                                title="t:connect"
-                                icon={evmConnectIcon}
-                                callback={openConnectOverlay}
-                            />
-                            <TonConnectModal
-                                title="TON Connect"
-                                icon={tonConnectIcon}
-                            />
-                            <WalletConnectModal
-                                title="Wallet Connect (TEST)"
-                                icon={walletConnectIcon}
-                                accountCallback={() => {}}
-                            />
-                        </div>
+                    <div className="flex justify-between">
+                        <button onClick={goBack}>Back</button>
+                        {connectionState === 'connected' && (
+                            <button onClick={skip}>Skip</button>
+                        )}
                     </div>
-                    {showConnectOverlay && (
-                        <ConnectOverlay
-                            slideAnimation={slideAnimation}
-                            close={closeConnectOverlay}
-                            onConnect={handleConnect}
-                            account={account}
-                        />
-                    )}
+                    <div className="flex flex-col absolute w-full bottom-0 bg-white pt-4 px-8 pb-14 gap-4 rounded-t-3xl rounded-b-xl shadow-custom-white">
+                        <h2 className="headline">CONNECT</h2>
+                        {/* Add your connect modals here */}
+                    </div>
                 </div>
             )}
             {view === View.CONNECTED && (
                 <>
                     <div className="components-container mb-2">
-                        <BackButton goBack={goBack} />
-                        <Avatar src={avatarTable} />
+                        <button onClick={goBack}>Back</button>
                         <div className="flex flex-col bg-white pt-4 px-8 pb-2 min-h-fit gap-2 rounded-t-3xl rounded-b-xl shadow-custom-white">
                             <h2 className="headline">HORRAY!</h2>
                             <div className="text-xs break-all font-semibold text-center text-customGrayAddress">
                                 <p className="my-0 mx-auto">{account}</p>
                             </div>
-                            <div className="flex justify-center items-center max-w-10 my-0 mx-auto">
-                                <img
-                                    className="max-h-full max-w-full"
-                                    src={etherIcon}
-                                    alt=""
-                                />
-                            </div>
                             <div className="flex flex-col items-center">
                                 <div className="flex justify-between items-center gap-4 text-lg font-semibold">
                                     <p className="m-0">Total Balance</p>
-                                    <Tooltip
-                                        headline="Balance"
-                                        content="The balance your wallet is currently holding."
-                                    />
-                                </div>
-                                <div className="text-2xl font-bold mb-4">
-                                    {balance || 0}
+                                    <p className="text-2xl font-bold mb-4">{balance || 0}</p>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div className="flex flex-col gap-2 p-2 mb-4">
-                        <PrimaryButton
-                            title="Open my Wallet"
-                            callback={openWallet}
-                        />
-                        <div>
-                            <PrimaryButton
-                                title="Disconnect"
-                                className="bg-red-200 border border-red-300 active:bg-red-300"
-                                textColor="customBlackText"
-                                callback={handleDisconnect}
-                            />
-                        </div>
+                        <button onClick={openMain}>Open Main</button>
+                        <button onClick={handleDisconnect} className="bg-red-200 border border-red-300 active:bg-red-300">
+                            Disconnect
+                        </button>
                     </div>
                 </>
             )}
-            {view === View.WALLET && (
-                <div>
-                    <div className="h-screen bg-customGrayWallet">
-                        <BackButton goBack={goBack} />
-                        <div className="flex flex-col gap-4 p-4">
-                            <div className="flex flex-col">
-                                <p className="m-0 text-xl font-semibold">
-                                    Total Balance
-                                </p>
-                                <p className="m-0 text-5xl font-extrabold">
-                                    <span className="text-customGrayAddress">
-                                        ETH
-                                    </span>
-                                    {balance || 0}
-                                </p>
+            {view === View.MAIN && (
+                <div className="flex flex-col items-center justify-center h-full bg-white">
+                    <h1 className="text-4xl font-bold mb-8">My GPT Wizard</h1>
+                    <div className="grid grid-cols-2 gap-4 w-full px-4">
+                        {[
+                            "Email Generator",
+                            "Meme Generator",
+                            "Live Chat",
+                            "Marketing Plan Generator",
+                            "Article Summarizer",
+                            "Code Debugger",
+                            "Image Captioner",
+                            "Personal Assistant",
+                            "Recipe Finder",
+                            "Travel Planner"
+                        ].map((tool) => (
+                            <div key={tool} className="flex items-center justify-center bg-gray-200 rounded-lg h-32 shadow-md">
+                                <p className="text-xl font-semibold">{tool}</p>
                             </div>
-                            <div className="flex justify-around gap-4 py-4 px-8">
-                                <TransactionButton
-                                    text="Send"
-                                    icon={sendIcon}
-                                    callback={sendFunds}
-                                />
-                                <TransactionButton
-                                    text="Receive"
-                                    icon={receiveIcon}
-                                    callback={receiveFunds}
-                                />
-                                <TransactionButton
-                                    text="Sell"
-                                    icon={sellIcon}
-                                    callback={sell}
-                                />
-                            </div>
-                            <div className="flex flex-col min-h-32 gap-2">
-                                {[...Array(3)].map((_, index) => (
-                                    <TransactionHistoryItem
-                                        key={index}
-                                        currency="Ether"
-                                        symbol="ETH"
-                                        valueSpot={parseFloat(balance || '0.0')}
-                                    />
-                                ))}
-                            </div>
-                            {signedMessage && (
-                                <div
-                                    style={{
-                                        color: 'black',
-                                    }}
-                                >
-                                    <p>Signed Message:</p>
-                                    <p className="my-0 mx-auto text-xs break-all text-center text-wrap">
-                                        {signedMessage}
-                                    </p>
-                                </div>
-                            )}
-                            <div className="flex flex-col gap-2">
-                                <PrimaryButton
-                                    title="Sign Test Message in Wallet"
-                                    callback={triggerTestMessageSign}
-                                />
-                            </div>
-                        </div>
+                        ))}
                     </div>
                 </div>
             )}
